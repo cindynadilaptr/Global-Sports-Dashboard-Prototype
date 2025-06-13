@@ -87,7 +87,6 @@ def scrape_from_kompas():
     print(f"\nTotal berita yang berhasil dikumpulkan dari semua halaman: {len(list_berita_kompas)}")
     return pd.DataFrame(list_berita_kompas)
 
-
 # Blok testing langsung
 if __name__ == '__main__':
     df_hasil = scrape_from_kompas()
@@ -264,7 +263,6 @@ def scrape_from_detik():
     
     return pd.DataFrame(semua_berita_detik)
 
-
 # --- Blok Testing Langsung ---
 if __name__ == '__main__':
     df_hasil_detik = scrape_from_detik()
@@ -274,6 +272,7 @@ if __name__ == '__main__':
     else:
         print("Tidak ada berita yang berhasil dikumpulkan dari Detik.com.")
 
+# Scraping deputi4.kemenpora.com
 def scrape_indoor_category(category_url: str, driver):
     list_berita_kategori = []
     driver.get(category_url)
@@ -350,7 +349,6 @@ def scrape_from_indoor():
         driver.quit()
     
     return pd.DataFrame(semua_berita_indoor)
-
 
 # --- Blok Testing Langsung ---
 if __name__ == '__main__':
