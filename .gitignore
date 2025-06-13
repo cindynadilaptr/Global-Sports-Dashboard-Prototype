@@ -33,4 +33,12 @@ dist/
 *.csv
 *.json
 
+# File sesi
 kovee.idn
+
+# Folder browser dan driver
+/chrome-win64/
+chromedriver.exe
+
+# File data CSV di dalam folder data
+data/*.csv
