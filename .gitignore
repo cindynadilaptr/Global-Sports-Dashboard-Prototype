@@ -32,3 +32,5 @@ dist/
 # Data dan Konfigurasi
 *.csv
 *.json
+
+kovee.idn
