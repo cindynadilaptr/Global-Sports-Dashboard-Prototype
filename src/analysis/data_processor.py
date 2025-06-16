@@ -1,4 +1,6 @@
 import pandas as pd
+import re
+from textblob import TextBlob 
 import sys
 import os
 script_dir = os.path.dirname(__file__)
