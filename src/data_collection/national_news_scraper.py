@@ -131,24 +131,34 @@ def scrape_template(target_key, sumber_nama):
     try:
         for _, url in config.TARGET_URLS[target_key]['categories'].items():
             driver.get(url)
-            for _ in range(config.MAX_SCROLLS):
-                driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-                time.sleep(config.SLEEP_TIME)
-            soup = BeautifulSoup(driver.page_source, 'html.parser')
-            articles = soup.select('div.newsrow__row')
-            for article in articles:
-                title_tag = article.find('h2', class_='newsrow__title')
-                link_tag = title_tag.find('a') if title_tag else None
-                title = safe_get_text(title_tag)
-                link = link_tag['href'] if link_tag else ''
-                tanggal = safe_get_text(article.find('span', class_='date'))
-                if title and link:
-                    data.append({
-                        'sumber': sumber_nama,
-                        'judul': title,
-                        'link': link,
-                        'tanggal_terbit': tanggal
-                    })
+            next_clicks = 0
+            while next_clicks < config.MAX_PAGES_PER_CATEGORY:
+                for _ in range(config.MAX_SCROLLS):
+                    driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+                    time.sleep(config.SLEEP_TIME)
+                soup = BeautifulSoup(driver.page_source, 'html.parser')
+                articles = soup.select('div.newsrow__row')
+                for article in articles:
+                    title_tag = article.find('h2', class_='newsrow__title')
+                    link_tag = title_tag.find('a') if title_tag else None
+                    title = safe_get_text(title_tag)
+                    link = link_tag['href'] if link_tag else ''
+                    tanggal = safe_get_text(article.find('span', class_='date'))
+                    if title and link:
+                        data.append({
+                            'sumber': sumber_nama,
+                            'judul': title,
+                            'link': link,
+                            'tanggal_terbit': tanggal
+                        })
+                try:
+                    next_btn = WebDriverWait(driver, 3).until(
+                        EC.element_to_be_clickable((By.XPATH, "//a[text()='→']")))
+                    driver.execute_script("arguments[0].click();", next_btn)
+                    time.sleep(config.SLEEP_TIME)
+                    next_clicks += 1
+                except:
+                    break
     finally:
         driver.quit()
     return pd.DataFrame(data)

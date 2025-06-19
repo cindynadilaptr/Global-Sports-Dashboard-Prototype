@@ -34,12 +34,12 @@ dist/
 *.csv
 *.json
 
-# File sesi
-kovee.idn
-
 # Folder browser dan driver
 /chrome-win64/
 chromedriver.exe
+SentiStrength_ID/
+sentiment_analyzer_bertlr.py
+train_bertlr_model.py
 
 # File data CSV di dalam folder data
 data/*.csv

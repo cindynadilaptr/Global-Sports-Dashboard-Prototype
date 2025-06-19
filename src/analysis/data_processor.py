@@ -11,13 +11,18 @@ import config
 
 def translate_date_ind_to_eng(text):
     ind_to_eng_months = {
-        'Januari': 'January', 'Februari': 'February', 'Maret': 'March',
-        'April': 'April', 'Mei': 'May', 'Juni': 'June',
-        'Juli': 'July', 'Agustus': 'August', 'September': 'September',
-        'Oktober': 'October', 'November': 'November', 'Desember': 'December',
-        'Jan': 'Jan', 'Feb': 'Feb', 'Mar': 'Mar', 'Apr': 'Apr',
-        'Mei': 'May', 'Jun': 'Jun', 'Jul': 'Jul', 'Agu': 'Aug',
-        'Sep': 'Sep', 'Okt': 'Oct', 'Nov': 'Nov', 'Des': 'Dec'
+        'Januari': 'January', 'Jan': 'Jan',
+        'Februari': 'February', 'Feb': 'Feb', 'Peb': 'Feb',
+        'Maret': 'March', 'Mar': 'Mar',
+        'April': 'April', 'Apr': 'Apr',
+        'Mei': 'May', 'May': 'May',
+        'Juni': 'June', 'Jun': 'Jun',
+        'Juli': 'July', 'Jul': 'Jul',
+        'Agustus': 'August', 'Ags': 'Aug', 'Agst': 'Aug', 'Agt': 'Aug',
+        'September': 'September', 'Sep': 'Sep', 'Sept': 'Sep',
+        'Oktober': 'October', 'Okt': 'Oct',
+        'November': 'November', 'Nov': 'Nov',
+        'Desember': 'December', 'Des': 'Dec'
     }
 
     ind_to_eng_days = {
@@ -38,7 +43,7 @@ def standardize_dates(df: pd.DataFrame, column_name: str = 'tanggal_terbit'):
 
     def parse_date(date_str):
         if not isinstance(date_str, str):
-            return None
+            return ''
         original = date_str
         date_str = date_str.replace('WIB', '').strip()
         date_str = translate_date_ind_to_eng(date_str)
@@ -68,12 +73,12 @@ def standardize_dates(df: pd.DataFrame, column_name: str = 'tanggal_terbit'):
                     continue
 
             parsed = pd.to_datetime(date_str, errors='coerce')
-            return parsed.strftime('%d/%m/%Y') if not pd.isna(parsed) else original
+            return parsed.strftime('%d/%m/%Y') if not pd.isna(parsed) else ''
         except:
-            return original
+            return ''
 
     df[column_name] = df[column_name].apply(parse_date)
-    print("Standarisasi tanggal selesai. Tidak ada baris yang dibuang.")
+    print("Standarisasi tanggal selesai. Semua baris dipertahankan dan diformat seragam.")
     return df
 
 def filter_berita_relevan(df: pd.DataFrame):
