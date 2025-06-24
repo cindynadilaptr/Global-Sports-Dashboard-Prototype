@@ -1,10 +1,12 @@
-import pandas as pd
 import os
+import pandas as pd
 import config
+import matplotlib.pyplot as plt
 
 from src.data_collection.insta_scraper import scrape_from_instagram_api
 from src.analysis.data_processor import filter_berita_relevan, standardize_dates
 from src.analysis.sentiment_analyzer import analisis_sentimen_dataframe
+from src.analysis.topic_modeler import extract_top_keywords, plot_top_keywords
 
 
 def save_or_append_data(df_new: pd.DataFrame, output_path: str, unique_key: str):
@@ -29,6 +31,35 @@ def save_or_append_data(df_new: pd.DataFrame, output_path: str, unique_key: str)
     df_final = df_updated.drop_duplicates(subset=[unique_key], keep='last')
     df_final.to_csv(output_path, index=False, encoding='utf-8')
     print(f"[SAVED] {output_path} diperbarui dengan {len(df_new)} data baru.")
+
+
+def tampilkan_distribusi_sentimen(df: pd.DataFrame, sumber: str):
+    if 'sentimen' not in df.columns:
+        print(f"[INFO] Tidak ada kolom sentimen untuk {sumber}")
+        return
+
+    print(f"\n📊 Distribusi Sentimen - {sumber}")
+    print(df['sentimen'].value_counts())
+
+    plt.figure(figsize=(6, 4))
+    df['sentimen'].value_counts().plot(kind='bar', color=['red', 'gray', 'green'])
+    plt.title(f'Distribusi Sentimen - {sumber}')
+    plt.xlabel('Kategori Sentimen')
+    plt.ylabel('Jumlah')
+    plt.xticks(rotation=0)
+    plt.tight_layout()
+    plt.show()
+
+
+def tampilkan_topik_trending(texts, sumber: str):
+    if texts.empty:
+        print(f"[INFO] Tidak ada teks tersedia untuk topik dari {sumber}")
+        return
+    print(f"\n🔥 Trending Keywords - {sumber}")
+    top_keywords = extract_top_keywords(texts.tolist(), top_n=15)
+    for word, score in top_keywords:
+        print(f"{word}: {score:.4f}")
+    plot_top_keywords(top_keywords, title=f"Trending Keywords - {sumber}")
 
 
 def proses_website_data():
@@ -65,11 +96,15 @@ def proses_website_data():
         # Internal
         df_internal = clean_df[clean_df['tipe_sumber'] == 'internal'].copy()
         df_internal = analisis_sentimen_dataframe(df_internal, text_column='judul')
+        tampilkan_distribusi_sentimen(df_internal, "Berita Internal")
+        tampilkan_topik_trending(df_internal['judul'], "Berita Internal")
         save_or_append_data(df_internal, config.OUTPUT_PATH_INTERNAL, unique_key='link')
 
         # Industri
         df_industry = filter_berita_relevan(clean_df)
         df_industry = analisis_sentimen_dataframe(df_industry, text_column='judul')
+        tampilkan_distribusi_sentimen(df_industry, "Berita Industri")
+        tampilkan_topik_trending(df_industry['judul'], "Berita Industri")
         save_or_append_data(df_industry, config.OUTPUT_PATH_INDUSTRY, unique_key='link')
     else:
         print("[INFO] Tidak ada data website yang tersedia.")
@@ -87,10 +122,14 @@ def proses_instagram_data():
 
     if not df_posts.empty:
         df_posts = analisis_sentimen_dataframe(df_posts, text_column='caption')
+        tampilkan_distribusi_sentimen(df_posts, "IG Posts")
+        tampilkan_topik_trending(df_posts['caption'], "IG Posts")
         save_or_append_data(df_posts, config.OUTPUT_PATH_IG_POSTS, unique_key='id')
 
     if not df_comments.empty:
         df_comments = analisis_sentimen_dataframe(df_comments, text_column='text')
+        tampilkan_distribusi_sentimen(df_comments, "IG Comments")
+        tampilkan_topik_trending(df_comments['text'], "IG Comments")
         save_or_append_data(df_comments, config.OUTPUT_PATH_IG_COMMENTS, unique_key='id')
 
 
