@@ -2,7 +2,7 @@ name: Jalankan Pipeline Data Mingguan
 
 on:
   schedule:
-    - cron: '0 23 * * 0'
+    - cron: '0 23 * * 0' # Setiap hari Minggu jam 23:00 WIB
   workflow_dispatch:
 
 jobs:
@@ -21,7 +21,7 @@ jobs:
       - name: Tampilkan Struktur File untuk Debugging
         run: ls -R
 
-      - name: Set up Python
+      - name: Setup Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.11'
@@ -34,16 +34,19 @@ jobs:
           GOOGLE_API_CREDENTIALS: ${{ secrets.GOOGLE_API_CREDENTIALS }}
         run: echo "$GOOGLE_API_CREDENTIALS" > google-api-credentials.json
 
-      - name: Install Google Chrome
-        run: |
-          wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
-          sudo apt install -y ./google-chrome-stable_current_amd64.deb
-
-      - name: Install ChromeDriver (cocok untuk Chrome)
+      - name: Install Google Chrome & ChromeDriver kompatibel
         run: |
           sudo apt update
-          sudo apt install -y chromium-chromedriver
-          sudo ln -sf /usr/lib/chromium-browser/chromedriver /usr/local/bin/chromedriver || true
+          sudo apt install -y wget unzip xvfb
+          wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+          sudo apt install -y ./google-chrome-stable_current_amd64.deb
+          CHROME_VERSION=$(google-chrome --version | grep -oP '\d+\.\d+\.\d+')
+          echo "Detected Chrome version: $CHROME_VERSION"
+          export DRIVER_URL="https://storage.googleapis.com/chrome-for-testing-public/$CHROME_VERSION/linux64/chromedriver-linux64.zip"
+          wget "$DRIVER_URL" -O chromedriver.zip || (echo "Driver not found. Trying fallback." && exit 1)
+          unzip chromedriver.zip
+          sudo mv chromedriver-linux64/chromedriver /usr/local/bin/
+          sudo chmod +x /usr/local/bin/chromedriver
 
       - name: Jalankan scraping dengan Selenium
         env:
