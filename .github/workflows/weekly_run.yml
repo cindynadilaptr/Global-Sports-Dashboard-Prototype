@@ -36,4 +36,5 @@ jobs:
       - name: Jalankan skrip utama pipeline
         env:
           IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
+          IG_APP_SECRET: ${{ secrets.IG_APP_SECRET }}
         run: python -u main.py
