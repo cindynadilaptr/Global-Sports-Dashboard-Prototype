@@ -16,6 +16,9 @@ jobs:
 
       - name: Tarik file dari Git LFS
         run: git lfs pull
+    
+      - name: Set up Chrome Browser
+        uses: browser-actions/setup-chrome@v1
       
       - name: Tampilkan Struktur File untuk Debugging
         run: ls -R
