@@ -1,8 +1,8 @@
-name: Jalankan Pipeline Data Mingguan
+name: Jalankan Scraper Mingguan
 
 on:
   schedule:
-    - cron: '0 23 * * 0'
+    - cron: '0 23 * * 0' # setiap minggu
   workflow_dispatch:
 
 jobs:
@@ -10,49 +10,43 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      - name: Checkout kode dari repository
         uses: actions/checkout@v3
-        with:
-          lfs: true
 
-      - name: Tarik file dari Git LFS
-        run: git lfs pull
+      - name: Install dependencies sistem
+        run: |
+          sudo apt update
+          sudo apt install -y wget unzip xvfb libxi6 libxrandr2 libasound2 libatk1.0-0 libatk-bridge2.0-0 libcups2 libgtk-3-0 libnss3 libxss1 libxtst6 libxcomposite1 libxdamage1 libxrandr2 libgbm1
 
-      - name: Install wget unzip & dependencies
-        run: sudo apt update && sudo apt install -y wget unzip xvfb libxi6 libgconf-2-4
-
-      - name: Install Chrome versi stabil (116.0.5845.96)
+      - name: Install Chrome (versi stabil)
         run: |
           wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
-          sudo dpkg -i google-chrome-stable_current_amd64.deb || sudo apt-get -f install -y
+          sudo dpkg -i google-chrome-stable_current_amd64.deb || sudo apt -fy install
 
-      - name: Install ChromeDriver untuk Chrome versi 116.0.5845.96
+      - name: Download & pasang ChromeDriver yang cocok
         run: |
-          wget https://edgedl.me.gvt1.com/edgedl/chrome/chrome-for-testing/116.0.5845.96/linux64/chromedriver-linux64.zip
+          CHROME_VERSION=$(google-chrome --version | grep -oP '\d+\.\d+\.\d+' | head -1)
+          wget -q "https://storage.googleapis.com/chrome-for-testing-public/${CHROME_VERSION}/linux64/chromedriver-linux64.zip"
           unzip chromedriver-linux64.zip
           sudo mv chromedriver-linux64/chromedriver /usr/local/bin/chromedriver
           sudo chmod +x /usr/local/bin/chromedriver
 
-      - name: Setup Python
+      - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.11'
 
-      - name: Install Requirements
-        run: pip install -r requirements.txt
-
-      - name: Download NLTK data
+      - name: Install dependencies Python
         run: |
-          python -m nltk.downloader stopwords
-          python -m nltk.downloader punkt
-          python -m nltk.downloader wordnet
+          pip install -r requirements.txt
+          python -m nltk.downloader stopwords punkt wordnet
 
-      - name: Buat Google API Credentials File
+      - name: Buat file kredensial Google API dari Secrets
         env:
           GOOGLE_API_CREDENTIALS: ${{ secrets.GOOGLE_API_CREDENTIALS }}
         run: echo "$GOOGLE_API_CREDENTIALS" > google-api-credentials.json
 
-      - name: Jalankan Skrip Scraping (xvfb)
+      - name: Jalankan main.py pakai xvfb-run
         env:
           IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
           IG_APP_SECRET: ${{ secrets.IG_APP_SECRET }}
