@@ -2,52 +2,47 @@ name: Jalankan Scraper Mingguan
 
 on:
   schedule:
-    - cron: '0 23 * * 0' # setiap minggu
+    - cron: '0 23 * * 0'
   workflow_dispatch:
 
 jobs:
-  scrape-and-update:
+  scraping:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout kode dari repository
-        uses: actions/checkout@v3
+    - name: Checkout kode
+      uses: actions/checkout@v3
+      with:
+        lfs: true
 
-      - name: Install dependencies sistem
-        run: |
-          sudo apt update
-          sudo apt install -y wget unzip xvfb libxi6 libxrandr2 libasound2 libatk1.0-0 libatk-bridge2.0-0 libcups2 libgtk-3-0 libnss3 libxss1 libxtst6 libxcomposite1 libxdamage1 libxrandr2 libgbm1
+    - name: Tarik file Git LFS
+      run: git lfs pull
 
-      - name: Install Chrome (versi stabil)
-        run: |
-          wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
-          sudo dpkg -i google-chrome-stable_current_amd64.deb || sudo apt -fy install
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
 
-      - name: Download & pasang ChromeDriver yang cocok
-        run: |
-          CHROME_VERSION=$(google-chrome --version | grep -oP '\d+\.\d+\.\d+' | head -1)
-          wget -q "https://storage.googleapis.com/chrome-for-testing-public/${CHROME_VERSION}/linux64/chromedriver-linux64.zip"
-          unzip chromedriver-linux64.zip
-          sudo mv chromedriver-linux64/chromedriver /usr/local/bin/chromedriver
-          sudo chmod +x /usr/local/bin/chromedriver
+    - name: Install dependencies Python
+      run: pip install -r requirements.txt
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.11'
+    - name: Download NLTK Data
+      run: |
+        python -m nltk.downloader stopwords punkt wordnet
 
-      - name: Install dependencies Python
-        run: |
-          pip install -r requirements.txt
-          python -m nltk.downloader stopwords punkt wordnet
+    - name: Unpack standalone Chrome + ChromeDriver
+      run: |
+        wget -q https://github.com/giggio/chrome-aws-lambda/releases/download/v116.0.5845.96/chrome-linux64.zip
+        unzip -q chrome-linux64.zip
+        export CHROME_PATH=$PWD/headless_shell
+        export PATH=$PWD/chromedriver:$PATH
+        chmod +x headless_shell
+        chmod +x chromedriver
 
-      - name: Buat file kredensial Google API dari Secrets
-        env:
-          GOOGLE_API_CREDENTIALS: ${{ secrets.GOOGLE_API_CREDENTIALS }}
-        run: echo "$GOOGLE_API_CREDENTIALS" > google-api-credentials.json
-
-      - name: Jalankan main.py pakai xvfb-run
-        env:
-          IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
-          IG_APP_SECRET: ${{ secrets.IG_APP_SECRET }}
-        run: xvfb-run python -u main.py
+    - name: Run scraper
+      env:
+        IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
+        IG_APP_SECRET: ${{ secrets.IG_APP_SECRET }}
+      run: |
+        export CHROME_BINARY=$PWD/headless_shell
+        python -u main.py
