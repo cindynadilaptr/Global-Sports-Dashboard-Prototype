@@ -1,0 +1,42 @@
+# Folder Lingkungan Virtual Python
+/venv/
+.venv/
+*.venv
+
+# File Cache & Kompilasi Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# File Kredensial & Rahasia
+*.env
+credentials.json
+client_secrets.json
+*.pem
+
+# File Spesifik OS dan Editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# File Log dan Build
+*.log
+build/
+dist/
+
+# File Notebook Checkpoints (jika pakai Jupyter Notebook)
+.ipynb_checkpoints
+
+# Data dan Konfigurasi
+*.csv
+*.json
+google-api-credentials.json
+
+# Folder browser dan driver
+/chrome-win64/
+chromedriver.exe
+
+# File data CSV di dalam folder data
+data/*.csv
