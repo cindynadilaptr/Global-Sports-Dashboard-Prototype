@@ -1,42 +1,51 @@
 name: Jalankan Scraper Mingguan
 
 on:
+  workflow_dispatch:
   schedule:
     - cron: '0 23 * * 0'
-  workflow_dispatch:
 
 jobs:
-  scraping:
+  run-scraper:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
-        with:
-          lfs: true
+      - name: Checkout repo
+        uses: actions/checkout@v3
 
-      - run: git lfs pull
-
-      - name: Install Python dan dependencies
+      - name: Setup Python
         uses: actions/setup-python@v4
-        with: python-version: '3.11'
-      - run: pip install -r requirements.txt
+        with:
+          python-version: '3.11'
 
-      - name: Download NLTK data
-        run: python -m nltk.downloader stopwords punkt wordnet
-
-      - name: Install Chrome + Edge-compatible ChromeDriver
+      - name: Install dependencies system (chrome)
         run: |
           sudo apt update
-          sudo apt install -y wget unzip xvfb
-          wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
-          sudo dpkg -i google-chrome-stable_current_amd64.deb || sudo apt-get -f install -y
-          wget https://msedgedriver.azureedge.net/116.0.5845.96/edgedriver_linux64.zip
-          unzip edgedriver_linux64.zip
-          sudo mv msedgedriver /usr/local/bin/chromedriver
-          sudo chmod +x /usr/local/bin/chromedriver
+          sudo apt install -y wget unzip curl
 
-      - name: Run scraper
+          # Download Chrome
+          wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+          sudo dpkg -i google-chrome-stable_current_amd64.deb || sudo apt -f install -y
+
+          # Verify chrome install
+          google-chrome --version
+
+          # Install matching ChromeDriver
+          CHROME_VERSION=$(google-chrome --version | grep -oP "\d+\.\d+\.\d+" | head -1)
+          DRIVER_URL="https://storage.googleapis.com/chrome-for-testing-public/$CHROME_VERSION/linux64/chromedriver-linux64.zip"
+
+          echo "Downloading ChromeDriver from $DRIVER_URL"
+          wget -O chromedriver.zip "$DRIVER_URL"
+          unzip chromedriver.zip
+          sudo mv chromedriver-linux64/chromedriver /usr/local/bin/
+          sudo chmod +x /usr/local/bin/chromedriver
+          chromedriver --version
+
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt
+
+      - name: Jalankan Scraping
         env:
           IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
           IG_APP_SECRET: ${{ secrets.IG_APP_SECRET }}
-        run: xvfb-run python -u main.py
+        run: python main.py
