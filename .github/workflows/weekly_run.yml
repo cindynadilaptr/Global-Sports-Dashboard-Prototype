@@ -2,8 +2,8 @@ name: Jalankan Pipeline Data Mingguan
 
 on:
   schedule:
-    - cron: '0 23 * * 0'  
-  workflow_dispatch:     
+    - cron: '0 23 * * 0'
+  workflow_dispatch:
 
 jobs:
   scrape-and-update:
@@ -26,7 +26,7 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Install library yang dibutuhkan
+      - name: Install semua library Python
         run: pip install -r requirements.txt
 
       - name: Buat file kredensial Google API dari Secrets
@@ -34,21 +34,18 @@ jobs:
           GOOGLE_API_CREDENTIALS: ${{ secrets.GOOGLE_API_CREDENTIALS }}
         run: echo "$GOOGLE_API_CREDENTIALS" > google-api-credentials.json
 
-      - name: Install Chrome (versi stabil terbaru)
+      - name: Install Google Chrome
         run: |
-          sudo apt update
-          sudo apt install -y wget unzip xvfb
           wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
-          sudo dpkg -i google-chrome-stable_current_amd64.deb || sudo apt -f install -y
+          sudo apt install -y ./google-chrome-stable_current_amd64.deb
 
-      - name: Install ChromeDriver (pakai versi dari Google Linux repo)
+      - name: Install ChromeDriver (cocok untuk Chrome)
         run: |
           sudo apt update
           sudo apt install -y chromium-chromedriver
-          sudo ln -s /usr/lib/chromium-browser/chromedriver /usr/local/bin/chromedriver || true
+          sudo ln -sf /usr/lib/chromium-browser/chromedriver /usr/local/bin/chromedriver || true
 
-
-      - name: Jalankan skrip utama pipeline
+      - name: Jalankan scraping dengan Selenium
         env:
           IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
           IG_APP_SECRET: ${{ secrets.IG_APP_SECRET }}
