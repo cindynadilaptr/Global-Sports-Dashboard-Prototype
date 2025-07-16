@@ -2,8 +2,8 @@ name: Jalankan Pipeline Data Mingguan
 
 on:
   schedule:
-    - cron: '0 23 * * 0'  # Setiap Minggu pukul 23:00 UTC
-  workflow_dispatch:      # Bisa dijalankan manual juga
+    - cron: '0 23 * * 0'  
+  workflow_dispatch:     
 
 jobs:
   scrape-and-update:
@@ -41,15 +41,12 @@ jobs:
           wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
           sudo dpkg -i google-chrome-stable_current_amd64.deb || sudo apt -f install -y
 
-      - name: Install ChromeDriver (cocok dengan versi Chrome)
+      - name: Install ChromeDriver (pakai versi dari Google Linux repo)
         run: |
-          CHROME_VERSION=$(google-chrome --version | grep -oP '\d+\.\d+\.\d+' | head -1)
-          echo "Detected Chrome version: $CHROME_VERSION"
-          DRIVER_URL="https://edgedl.me.gvt1.com/edgedl/chrome/chrome-for-testing/$CHROME_VERSION/linux64/chromedriver-linux64.zip"
-          wget -O chromedriver.zip "$DRIVER_URL"
-          unzip chromedriver.zip
-          sudo mv chromedriver-linux64/chromedriver /usr/local/bin/
-          sudo chmod +x /usr/local/bin/chromedriver
+          sudo apt update
+          sudo apt install -y chromium-chromedriver
+          sudo ln -s /usr/lib/chromium-browser/chromedriver /usr/local/bin/chromedriver || true
+
 
       - name: Jalankan skrip utama pipeline
         env:
