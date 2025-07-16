@@ -1,30 +1,9 @@
+import nltk
+nltk.download('stopwords')
+nltk.download('punkt')
+nltk.download('wordnet')
 import sys
 import os
-import zipfile
-
-sys.path.insert(0, os.path.abspath("SentiStrength_ID"))
-def download_and_extract_sentistrength():
-    import gdown
-    import shutil
-    zip_path = "SentiStrength_ID.zip"
-    folder_path = "SentiStrength_ID"
-    if not os.path.exists(folder_path):
-        print("[INFO] Mengunduh SentiStrength_ID dari Google Drive...")
-        gdown.download(id="1FVHCxj8M8i-4e5ExLAPx_Pwt1V5bdMO-", output=zip_path, quiet=False)
-        print("[INFO] Mengekstrak ZIP...")
-        with zipfile.ZipFile(zip_path, "r") as zip_ref:
-            zip_ref.extractall("tmp_sentistrength")
-            for root, _, files in os.walk("tmp_sentistrength"):
-                for file in files:
-                    if file.endswith(".py"):
-                        src = os.path.join(root, file)
-                        dst = os.path.join(folder_path, file)
-                        os.makedirs(folder_path, exist_ok=True)
-                        os.replace(src, dst)
-        os.remove(zip_path)
-        shutil.rmtree("tmp_sentistrength")
-        print("[INFO] Ekstraksi selesai dan struktur folder diperbaiki.")
-
 import pandas as pd
 import config
 import gspread
