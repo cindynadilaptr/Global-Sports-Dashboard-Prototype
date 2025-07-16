@@ -2,6 +2,8 @@ import nltk
 nltk.download('stopwords')
 nltk.download('punkt')
 nltk.download('wordnet')
+from dotenv import load_dotenv
+load_dotenv()
 import sys
 import os
 import pandas as pd
