@@ -2,7 +2,7 @@ name: Jalankan Pipeline Data Mingguan
 
 on:
   schedule:
-    - cron: '0 23 * * 0' # Setiap hari Minggu jam 23:00 WIB
+    - cron: '0 23 * * 0'
   workflow_dispatch:
 
 jobs:
@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout kode dari repository (dengan LFS)
+      - name: Checkout repository
         uses: actions/checkout@v3
         with:
           lfs: true
@@ -18,37 +18,41 @@ jobs:
       - name: Tarik file dari Git LFS
         run: git lfs pull
 
-      - name: Tampilkan Struktur File untuk Debugging
-        run: ls -R
+      - name: Install wget unzip & dependencies
+        run: sudo apt update && sudo apt install -y wget unzip xvfb libxi6 libgconf-2-4
+
+      - name: Install Chrome versi stabil (116.0.5845.96)
+        run: |
+          wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+          sudo dpkg -i google-chrome-stable_current_amd64.deb || sudo apt-get -f install -y
+
+      - name: Install ChromeDriver untuk Chrome versi 116.0.5845.96
+        run: |
+          wget https://edgedl.me.gvt1.com/edgedl/chrome/chrome-for-testing/116.0.5845.96/linux64/chromedriver-linux64.zip
+          unzip chromedriver-linux64.zip
+          sudo mv chromedriver-linux64/chromedriver /usr/local/bin/chromedriver
+          sudo chmod +x /usr/local/bin/chromedriver
 
       - name: Setup Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.11'
 
-      - name: Install semua library Python
+      - name: Install Requirements
         run: pip install -r requirements.txt
 
-      - name: Buat file kredensial Google API dari Secrets
+      - name: Download NLTK data
+        run: |
+          python -m nltk.downloader stopwords
+          python -m nltk.downloader punkt
+          python -m nltk.downloader wordnet
+
+      - name: Buat Google API Credentials File
         env:
           GOOGLE_API_CREDENTIALS: ${{ secrets.GOOGLE_API_CREDENTIALS }}
         run: echo "$GOOGLE_API_CREDENTIALS" > google-api-credentials.json
 
-      - name: Install Google Chrome & ChromeDriver kompatibel
-        run: |
-          sudo apt update
-          sudo apt install -y wget unzip xvfb
-          wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
-          sudo apt install -y ./google-chrome-stable_current_amd64.deb
-          CHROME_VERSION=$(google-chrome --version | grep -oP '\d+\.\d+\.\d+')
-          echo "Detected Chrome version: $CHROME_VERSION"
-          export DRIVER_URL="https://storage.googleapis.com/chrome-for-testing-public/$CHROME_VERSION/linux64/chromedriver-linux64.zip"
-          wget "$DRIVER_URL" -O chromedriver.zip || (echo "Driver not found. Trying fallback." && exit 1)
-          unzip chromedriver.zip
-          sudo mv chromedriver-linux64/chromedriver /usr/local/bin/
-          sudo chmod +x /usr/local/bin/chromedriver
-
-      - name: Jalankan scraping dengan Selenium
+      - name: Jalankan Skrip Scraping (xvfb)
         env:
           IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
           IG_APP_SECRET: ${{ secrets.IG_APP_SECRET }}
