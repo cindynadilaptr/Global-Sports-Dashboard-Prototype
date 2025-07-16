@@ -10,39 +10,33 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout kode
-      uses: actions/checkout@v3
-      with:
-        lfs: true
+      - uses: actions/checkout@v3
+        with:
+          lfs: true
 
-    - name: Tarik file Git LFS
-      run: git lfs pull
+      - run: git lfs pull
 
-    - name: Setup Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.11'
+      - name: Install Python dan dependencies
+        uses: actions/setup-python@v4
+        with: python-version: '3.11'
+      - run: pip install -r requirements.txt
 
-    - name: Install dependencies Python
-      run: pip install -r requirements.txt
+      - name: Download NLTK data
+        run: python -m nltk.downloader stopwords punkt wordnet
 
-    - name: Download NLTK Data
-      run: |
-        python -m nltk.downloader stopwords punkt wordnet
+      - name: Install Chrome + Edge-compatible ChromeDriver
+        run: |
+          sudo apt update
+          sudo apt install -y wget unzip xvfb
+          wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+          sudo dpkg -i google-chrome-stable_current_amd64.deb || sudo apt-get -f install -y
+          wget https://msedgedriver.azureedge.net/116.0.5845.96/edgedriver_linux64.zip
+          unzip edgedriver_linux64.zip
+          sudo mv msedgedriver /usr/local/bin/chromedriver
+          sudo chmod +x /usr/local/bin/chromedriver
 
-    - name: Unpack standalone Chrome + ChromeDriver
-      run: |
-        wget -q https://github.com/giggio/chrome-aws-lambda/releases/download/v116.0.5845.96/chrome-linux64.zip
-        unzip -q chrome-linux64.zip
-        export CHROME_PATH=$PWD/headless_shell
-        export PATH=$PWD/chromedriver:$PATH
-        chmod +x headless_shell
-        chmod +x chromedriver
-
-    - name: Run scraper
-      env:
-        IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
-        IG_APP_SECRET: ${{ secrets.IG_APP_SECRET }}
-      run: |
-        export CHROME_BINARY=$PWD/headless_shell
-        python -u main.py
+      - name: Run scraper
+        env:
+          IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
+          IG_APP_SECRET: ${{ secrets.IG_APP_SECRET }}
+        run: xvfb-run python -u main.py
