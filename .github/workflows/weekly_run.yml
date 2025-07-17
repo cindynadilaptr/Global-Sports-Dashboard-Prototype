@@ -49,8 +49,8 @@ jobs:
       
       - name: Create Google API Credentials File
         env:
-          GCP_SA_KEY_CONTENT: ${{ secrets.GCP_SA_KEY }}
-        run: echo "$GCP_SA_KEY_CONTENT" > google-api-credentials.json
+          GOOGLE_API_CREDENTIALS_CONTENT: ${{ secrets.GOOGLE_API_CREDENTIALS }}
+        run: echo "$GOOGLE_API_CREDENTIALS_CONTENT" > google-api-credentials.json
 
       - name: Jalankan Scraping
         env:
