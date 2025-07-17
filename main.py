@@ -3,6 +3,7 @@ import nltk
 nltk.download('stopwords')
 nltk.download('punkt')
 nltk.download('wordnet')
+nltk.download('punkt_tab')
 
 print("[DEBUG] Selesai download NLTK, memulai import library...", flush=True)
 from dotenv import load_dotenv
