@@ -1,21 +1,35 @@
+print("[DEBUG] File main.py mulai dieksekusi, memproses NLTK download...")
 import nltk
 nltk.download('stopwords')
 nltk.download('punkt')
 nltk.download('wordnet')
+
+print("[DEBUG] Selesai download NLTK, memulai import library...")
 from dotenv import load_dotenv
 load_dotenv()
+print("[DEBUG] Selesai import dotenv.")
+
 import sys
 import os
 import pandas as pd
 import config
 import gspread
+print("[DEBUG] Selesai import library standar.")
+
 sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
 from gspread_dataframe import set_with_dataframe
+print("[DEBUG] Selesai import gspread_dataframe.")
 
 from src.data_collection.insta_scraper import scrape_from_instagram_api
+print("[DEBUG] Selesai import insta_scraper.")
 from src.analysis.data_processor import filter_berita_relevan, standardize_dates
+print("[DEBUG] Selesai import data_processor.")
 from src.analysis.sentiment_analyzer import analisis_sentimen_dataframe
+print("[DEBUG] Selesai import sentiment_analyzer.")
 from src.analysis.topic_modeler import extract_top_keywords
+print("[DEBUG] Selesai import topic_modeler.")
+
+print("[DEBUG] Semua modul berhasil di-import. Fungsi siap didefinisikan.")
 
 def save_and_upload(df_new: pd.DataFrame, output_path: str, unique_key: str, gsheet_tab_name: str):
     if df_new is None or df_new.empty:
@@ -70,21 +84,28 @@ def proses_trending_keywords(df_source: pd.DataFrame, text_column: str, output_p
     save_and_upload(df_keywords, output_path, 'keyword', gsheet_tab_name)
 
 def process_all_data():
+    print("[DEBUG] Memulai eksekusi fungsi process_all_data.")
+    
     print("\n" + "="*20 + " MEMPROSES DATA WEBSITE " + "="*20)
     all_website_dataframes = []
+    print("[DEBUG] Looping melalui TARGET_URLS untuk scraping website...")
     for source_name, source_config in config.TARGET_URLS.items():
         scraper_func = source_config.get('scraper_function')
         if scraper_func:
             try:
+                print(f"[DEBUG] Menjalankan scraper untuk '{source_name}'...")
                 df = scraper_func()
                 if df is not None and not df.empty:
                     df['source'] = source_name
                     df['tipe_sumber'] = 'internal' if source_name in config.INTERNAL_SOURCES_NAMES else 'eksternal'
                     all_website_dataframes.append(df)
+                    print(f"[DEBUG] Scraper '{source_name}' selesai, data ditambahkan.")
             except Exception as e:
                 print(f"[ERROR] Scraping gagal dari '{source_name}': {e}")
     
+    print("[DEBUG] Selesai looping scraper website.")
     if all_website_dataframes:
+        print("[DEBUG] Data website ditemukan, melanjutkan ke pemrosesan...")
         raw_df = pd.concat(all_website_dataframes, ignore_index=True)
         clean_df = standardize_dates(raw_df, column_name='tanggal_terbit')
         
@@ -102,7 +123,9 @@ def process_all_data():
 
     print("\n" + "="*20 + " MEMPROSES DATA INSTAGRAM " + "="*20)
     try:
+        print("[DEBUG] Mencoba menjalankan scrape_from_instagram_api...")
         df_profile, df_posts, df_comments = scrape_from_instagram_api(target_account_key="personal")
+        print("[DEBUG] scrape_from_instagram_api selesai.")
 
         if df_profile is not None:
             save_and_upload(df_profile, config.OUTPUT_PATH_IG_PROFILE, 'id', config.GCP_SHEET_TABS['profile'])
@@ -121,5 +144,9 @@ def process_all_data():
         print(f"[ERROR] Scraping Instagram gagal: {e}")
 
 if __name__ == "__main__":
-    process_all_data()
-    print("\n" + "="*20 + " SEMUA PROSES SELESAI " + "="*20)
+    print("[DEBUG] Memasuki blok eksekusi utama (__name__ == '__main__').")
+    try:
+        process_all_data()
+        print("\n" + "="*20 + " SEMUA PROSES SELESAI " + "="*20)
+    except Exception as e:
+        print(f"[FATAL ERROR] Terjadi error tak terduga di proses utama: {e}")
