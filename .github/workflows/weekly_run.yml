@@ -3,7 +3,7 @@ name: Jalankan Scraper Mingguan
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 23 * * 0'
+    - cron: '0 23 * * 0' 
 
 jobs:
   run-scraper:
@@ -11,34 +11,35 @@ jobs:
 
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.11'
 
-      - name: Install dependencies system (chrome)
+      - name: Install Chrome dan ChromeDriver yang Sesuai
         run: |
-          sudo apt update
-          sudo apt install -y wget unzip curl
+          sudo apt-get update
+          sudo apt-get install -y wget unzip curl jq
 
-          # Download Chrome
           wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
-          sudo dpkg -i google-chrome-stable_current_amd64.deb || sudo apt -f install -y
+          sudo dpkg -i google-chrome-stable_current_amd64.deb || sudo apt-get -f install -y
+          
+          CHROME_VERSION_FULL=$(google-chrome --version | awk '{print $3}')
+          echo "Versi Chrome terinstall: $CHROME_VERSION_FULL"
 
-          # Verify chrome install
-          google-chrome --version
-
-          # Install matching ChromeDriver
-          CHROME_VERSION=$(google-chrome --version | grep -oP "\d+\.\d+\.\d+" | head -1)
-          DRIVER_URL="https://storage.googleapis.com/chrome-for-testing-public/$CHROME_VERSION/linux64/chromedriver-linux64.zip"
-
-          echo "Downloading ChromeDriver from $DRIVER_URL"
+          DRIVER_URL=$(curl -s https://googlechromelabs.github.io/chrome-for-testing/known-good-versions-with-downloads.json | jq -r ".versions[] | select(.version == \"$CHROME_VERSION_FULL\") | .downloads.chromedriver[] | select(.platform == \"linux64\") | .url")
+          
+          echo "Mengunduh ChromeDriver dari: $DRIVER_URL"
           wget -O chromedriver.zip "$DRIVER_URL"
+          
           unzip chromedriver.zip
           sudo mv chromedriver-linux64/chromedriver /usr/local/bin/
           sudo chmod +x /usr/local/bin/chromedriver
+          
+          echo "--- Verifikasi Instalasi ---"
+          google-chrome --version
           chromedriver --version
 
       - name: Install Python dependencies
