@@ -73,8 +73,8 @@ def proses_trending_keywords(df_source: pd.DataFrame, text_column: str, output_p
         
     print(f"\n Menganalisis Trending Keywords untuk: {gsheet_tab_name}", flush=True)
     
-    texts = df_source[text_column].dropna().tolist()
-    top_keywords_list = extract_top_keywords(texts, top_n=20)
+    top_keywords_list = extract_top_keywords(df_source, text_column=text_column, top_n=10)
+
     
     if not top_keywords_list:
         print(f"[INFO] Tidak ada keyword yang dihasilkan untuk {gsheet_tab_name}", flush=True)
