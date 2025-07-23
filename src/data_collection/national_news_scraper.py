@@ -116,10 +116,15 @@ def scrape_detik_category(url, driver):
                     'tanggal_terbit': tanggal
                 })
         try:
-            next_btn = WebDriverWait(driver, 5).until(
-                EC.element_to_be_clickable((By.XPATH, "//a[text()='Next']")))
+            next_btn = WebDriverWait(driver, 10).until(
+                EC.presence_of_element_located((By.XPATH, "//a[@class='pagination__item' and contains(., 'Next')]"))
+            )
+            driver.execute_script("arguments[0].scrollIntoView();", next_btn)
+            time.sleep(0.5)
             driver.execute_script("arguments[0].click();", next_btn)
-        except:
+            time.sleep(config.SLEEP_TIME)
+            next_clicks += 1
+        except Exception as e:
             break
     return data
 
