@@ -116,15 +116,15 @@ def scrape_detik_category(url, driver):
                     'tanggal_terbit': tanggal
                 })
         try:
-            next_btn = WebDriverWait(driver, 10).until(
-                EC.presence_of_element_located((By.XPATH, "//a[@class='pagination__item' and contains(., 'Next')]"))
-            )
+            next_btn = driver.find_element(By.XPATH, "//a[@class='pagination__item' and contains(., 'Next')]")
+            print("Tombol Next ketemu.")
             driver.execute_script("arguments[0].scrollIntoView();", next_btn)
             time.sleep(0.5)
-            driver.execute_script("arguments[0].click();", next_btn)
+            next_btn.click()
             time.sleep(config.SLEEP_TIME)
             next_clicks += 1
         except Exception as e:
+            print("Gagal klik tombol Next:", e)
             break
     return data
 
