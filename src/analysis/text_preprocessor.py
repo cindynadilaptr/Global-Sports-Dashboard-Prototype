@@ -10,21 +10,35 @@ stemmer = factory.create_stemmer()
 stop_words_id = set(stopwords.words('indonesian'))
 stop_words_en = set(stopwords.words('english'))
 negation_words = {'tidak', 'kurang', 'bukan', 'not', 'no'}
-custom_stopwords = {
-    'min', 'kak', 'ka', 'sih', 'nya', 'dong', 'deh', 'kok', 'saja', 'aja',
-    'yg', 'ya', 'ga', 'gak', 'enggak', 'nggak', 'wkwk', 'hehe', 'haha',
-    'alhamdulillah', 'selamat', 'semoga', 'mantap', 'ikutan', 'pengumumannya',
-    'udah', 'indonesia', 'nih', 'mohon', 'gimana', 'link', 'jam', 'admin', 
-    'deputikemenpora', 'kemenpora', 'menpora', 'dito', 'ni', 'dr', 'asrorun', 
-    'niam_sholeh', 'keren', 'bismillah', 'semangat', 'masuk', 'ayo', 'sukses', 'terima kasih', 
-    'terimakasih', 'terima kasih banyak', 'terimakasih banyak', 'tolong', 'tolong cek', 'tolong bantu', 
-    'tolong bantu cek', 'coba', 'gas', 'kah', 'ri', 'sholeh', 'blm', 'yah', 'terima', 'kasih',
-    'dm', 'deputi', 'bidang', 'deputipengembangan', 'pemuda', 'acara', 'cek', 'dimana', 'info', 'usia'
-    'maaf', 'banget', 'bikin', 'dunia', 'nahrawi_imam', 'tgl'
-}
 
-STOPWORDS_FOR_SENTIMENT = (stop_words_id | stop_words_en | custom_stopwords) - negation_words
-STOPWORDS_FOR_TOPICS = (stop_words_id | stop_words_en | custom_stopwords) | negation_words
+def load_custom_stopwords(file_path='src/analysis/stopwords_custom.txt'):
+    try:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            return set(f.read().splitlines())
+    except FileNotFoundError:
+        return set()
+
+custom_stopwords = load_custom_stopwords()
+stemmed_custom_stopwords = set(stemmer.stem(word) for word in custom_stopwords)
+
+print(">>> Custom stopwords (tanpa stem):")
+print(custom_stopwords)
+
+print("\n>>> Custom stopwords (dengan stem):")
+print(stemmed_custom_stopwords)
+
+STOPWORDS_FOR_SENTIMENT = (
+    stop_words_id |
+    stop_words_en |
+    custom_stopwords) - negation_words
+
+STOPWORDS_FOR_TOPICS = (
+    stop_words_id |
+    stop_words_en |
+    custom_stopwords |
+    stemmed_custom_stopwords |
+    negation_words)
+
 
 common_english_words = set([
     "good", "great", "best", "bad", "worst", "love", "like", "hate", "awesome", "cool",
@@ -112,10 +126,29 @@ def preprocess_for_topic_modeling(text: str) -> str:
 
     text = text.lower()
     text = remove_emojis(text)
-    text = normalize_phrases(text)
-    text = normalize_slang(text)
-    text = remove_repeated_chars(text)
     text = re.sub(r"http\S+|www\S+", '', text)
     text = re.sub(r"[\d.]+", "", text)
-    
-    return text
+    text = re.sub(f"[{re.escape(string.punctuation)}]", "", text)
+
+    tokens = word_tokenize(text)
+
+    # Stemming dulu semuanya
+    stemmed_tokens = [stemmer.stem(word) for word in tokens]
+
+    # Lalu filter stopwords yang sudah di-stem
+    filtered_tokens = [
+        word for word in stemmed_tokens 
+        if word not in stemmed_custom_stopwords 
+        and word not in stop_words_id 
+        and word not in stop_words_en 
+        and word not in negation_words 
+        and len(word) > 2
+    ]
+
+    return " ".join(filtered_tokens)
+
+print("\n>>> Coba test kalimat:")
+test_text = "menpora dan dito dukung olahraga indonesia"
+print("Before preprocessing:", test_text)
+print("After preprocessing :", preprocess_for_topic_modeling(test_text))
+
