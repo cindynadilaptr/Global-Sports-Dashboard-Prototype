@@ -6,11 +6,7 @@ from src.analysis import text_preprocessor
 from src.analysis.text_preprocessor import preprocess_for_topic_modeling
 from src.analysis.data_processor import standardize_dates
 
-
 def extract_top_keywords(df, text_column, date_column=None, start_date=None, end_date=None, top_n=20, min_document_frequency=2):
-    """
-    Mengekstrak keywords teratas dari DataFrame berdasarkan rentang waktu yang diberikan.
-    """
     if df.empty:
         return []
 
@@ -38,7 +34,7 @@ def extract_top_keywords(df, text_column, date_column=None, start_date=None, end
 
     processed_texts = df_filtered[text_column].apply(preprocess_for_topic_modeling).tolist()
     print("\nContoh hasil preprocessing:")
-    for i in range(3):
+    for i in range(min(3, len(processed_texts))):
         print(f"- {processed_texts[i]}")
 
     vectorizer = TfidfVectorizer(
@@ -78,10 +74,24 @@ def extract_top_keywords(df, text_column, date_column=None, start_date=None, end
     
     return normalized_keywords
 
+def get_trending_keywords_last_30_days(df, text_column, date_column, top_n=15):
+    print(f"[INFO] Menghitung keywords untuk 30 hari terakhir secara otomatis...")
+    
+    end_date = pd.to_datetime('today')
+    start_date = end_date - pd.Timedelta(days=30)
+    
+    top_keywords = extract_top_keywords(
+        df=df,
+        text_column=text_column,
+        date_column=date_column,
+        start_date=start_date,
+        end_date=end_date,
+        top_n=top_n
+    )
+    
+    return top_keywords
+
 def plot_top_keywords(keywords, title="Top Keywords"):
-    """
-    Fungsi bantuan untuk visualisasi cepat saat testing.
-    """
     if not keywords:
         print("[INFO] Tidak ada keyword untuk divisualisasikan.")
         return
@@ -163,5 +173,5 @@ if __name__ == '__main__':
         else:
             for word, score in top_keywords:
                 print(f"- {word} (Skor: {score:.2f})")
-        print("-" * 20)     
+        print("-" * 20)      
     print("\n--- SEMUA PROSES SELESAI ---")

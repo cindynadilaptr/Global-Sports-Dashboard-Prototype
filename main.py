@@ -27,7 +27,7 @@ from src.analysis.data_processor import filter_berita_relevan, standardize_dates
 print("[DEBUG] Selesai import data_processor.", flush=True)
 from src.analysis.sentiment_analyzer import analisis_sentimen_dataframe
 print("[DEBUG] Selesai import sentiment_analyzer.", flush=True)
-from src.analysis.topic_modeler import extract_top_keywords
+from src.analysis.topic_modeler import get_trending_keywords_last_30_days
 print("[DEBUG] Selesai import topic_modeler.", flush=True)
 
 print("[DEBUG] Semua modul berhasil di-import. Fungsi siap didefinisikan.", flush=True)
@@ -47,7 +47,7 @@ def save_and_upload(df_new: pd.DataFrame, output_path: str, unique_key: str, gsh
             combined_df = pd.concat([df_lama, df_new], ignore_index=True)
             final_df_to_save = combined_df.drop_duplicates(subset=[unique_key], keep='last')
         except (FileNotFoundError, pd.errors.EmptyDataError):
-             print(f"[WARNING] File lama {output_path} tidak ditemukan/kosong. Membuat file baru.", flush=True)
+            print(f"[WARNING] File lama {output_path} tidak ditemukan/kosong. Membuat file baru.", flush=True)
     
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     final_df_to_save.to_csv(output_path, index=False, encoding='utf-8')
@@ -66,16 +66,20 @@ def save_and_upload(df_new: pd.DataFrame, output_path: str, unique_key: str, gsh
     except Exception as e:
         print(f"[ERROR] Gagal meng-update Google Sheet: {e}", flush=True)
 
-def proses_trending_keywords(df_source: pd.DataFrame, text_column: str, output_path: str, gsheet_tab_name: str):
+def proses_trending_keywords(df_source: pd.DataFrame, text_column: str, date_column: str, output_path: str, gsheet_tab_name: str):
     if df_source is None or df_source.empty or text_column not in df_source.columns:
         print(f"[INFO] Tidak ada data untuk analisis keywords di {gsheet_tab_name}", flush=True)
         return
         
     print(f"\n Menganalisis Trending Keywords untuk: {gsheet_tab_name}", flush=True)
     
-    top_keywords_list = extract_top_keywords(df_source, text_column=text_column, top_n=10)
+    top_keywords_list = get_trending_keywords_last_30_days(
+        df=df_source, 
+        text_column=text_column, 
+        date_column=date_column,
+        top_n=10
+    )
 
-    
     if not top_keywords_list:
         print(f"[INFO] Tidak ada keyword yang dihasilkan untuk {gsheet_tab_name}", flush=True)
         return
@@ -113,12 +117,12 @@ def process_all_data():
         df_internal = clean_df[clean_df['tipe_sumber'] == 'internal'].copy()
         df_internal_analyzed = analisis_sentimen_dataframe(df_internal, text_column='judul')
         save_and_upload(df_internal_analyzed, config.OUTPUT_PATH_INTERNAL, 'link', config.GCP_SHEET_TABS['internal'])
-        proses_trending_keywords(df_internal_analyzed, 'judul', config.OUTPUT_PATH_KEYWORDS_INTERNAL, config.GCP_SHEET_TABS['keywords_internal'])
+        proses_trending_keywords(df_internal_analyzed, 'judul', 'tanggal_terbit', config.OUTPUT_PATH_KEYWORDS_INTERNAL, config.GCP_SHEET_TABS['keywords_internal'])
 
         df_industry_filtered = filter_berita_relevan(clean_df)
         df_industry_analyzed = analisis_sentimen_dataframe(df_industry_filtered, text_column='judul')
         save_and_upload(df_industry_analyzed, config.OUTPUT_PATH_INDUSTRY, 'link', config.GCP_SHEET_TABS['industry'])
-        proses_trending_keywords(df_industry_analyzed, 'judul', config.OUTPUT_PATH_KEYWORDS_INDUSTRY, config.GCP_SHEET_TABS['keywords_industry'])
+        proses_trending_keywords(df_industry_analyzed, 'judul', 'tanggal_terbit', config.OUTPUT_PATH_KEYWORDS_INDUSTRY, config.GCP_SHEET_TABS['keywords_industry'])
     else:
         print("[INFO] Tidak ada data website yang berhasil di-scrape.", flush=True)
 
@@ -134,12 +138,12 @@ def process_all_data():
         if df_posts is not None:
             df_posts_analyzed = analisis_sentimen_dataframe(df_posts, text_column='caption')
             save_and_upload(df_posts_analyzed, config.OUTPUT_PATH_IG_POSTS, 'id', config.GCP_SHEET_TABS['posts'])
-            proses_trending_keywords(df_posts_analyzed, 'caption', config.OUTPUT_PATH_KEYWORDS_POSTS, config.GCP_SHEET_TABS['keywords_posts'])
+            proses_trending_keywords(df_posts_analyzed, 'caption', 'timestamp', config.OUTPUT_PATH_KEYWORDS_POSTS, config.GCP_SHEET_TABS['keywords_posts'])
 
         if df_comments is not None:
             df_comments_analyzed = analisis_sentimen_dataframe(df_comments, text_column='text')
             save_and_upload(df_comments_analyzed, config.OUTPUT_PATH_IG_COMMENTS, 'id', config.GCP_SHEET_TABS['comments'])
-            proses_trending_keywords(df_comments_analyzed, 'text', config.OUTPUT_PATH_KEYWORDS_COMMENTS, config.GCP_SHEET_TABS['keywords_comments'])
+            proses_trending_keywords(df_comments_analyzed, 'text', 'timestamp', config.OUTPUT_PATH_KEYWORDS_COMMENTS, config.GCP_SHEET_TABS['keywords_comments'])
 
     except Exception as e:
         print(f"[ERROR] Scraping Instagram gagal: {e}", flush=True)
